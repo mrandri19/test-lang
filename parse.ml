@@ -44,6 +44,12 @@ let () =
   expr ::= term (op expr)*
   term ::= (number | '(' expr ')' )
 
+  TODO: implement precedences
+  The new grammar with precedences:
+
+  expr ::= factor (sum_sub factor)*
+  factor ::= term (mul_div term)*
+  term ::= (number | '(' expr ')' )
  *)
   let op_of_lexeme l = match l with
     | Plus -> Sum
@@ -79,13 +85,24 @@ let () =
     in
 
     let rec expr (): ast =
+      let fac = factor () in
+      let tmp = ref fac in
+
+      while (match peek () with | Some Plus | Some Minus -> true | _ -> false) do
+        let op = Option.value_exn (peek () ) in
+        consume op;
+        let ex = factor () in
+        tmp := Expr (!tmp, op |> op_of_lexeme, ex)
+      done;
+      !tmp
+    and factor (): ast =
       let ter = term () in
       let tmp = ref ter in
 
-      while (match peek () with | Some Plus | Some Minus | Some Star | Some Slash -> true | _ -> false) do
+      while (match peek () with | Some Star | Some Slash -> true | _ -> false) do
         let op = Option.value_exn (peek () ) in
         consume op;
-        let ex = expr () in
+        let ex = term () in
         tmp := Expr (!tmp, op |> op_of_lexeme, ex)
       done;
       !tmp
