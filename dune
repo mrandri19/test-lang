@@ -1,0 +1,5 @@
+(executable
+    (name parse)
+    (libraries core lex)
+    (preprocess (pps ppx_deriving.std))
+)

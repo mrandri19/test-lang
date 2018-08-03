@@ -1,0 +1,5 @@
+(library
+    (name lex)
+    (libraries core stdio str)
+    (preprocess (pps ppx_deriving.std))
+ )
