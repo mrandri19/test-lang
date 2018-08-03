@@ -14,7 +14,7 @@ type ast =
   | Parenthesised of ast
 [@@deriving show]
 
-  (*
+(*
   This is the original grammar
   expr ::=
         expr op expr

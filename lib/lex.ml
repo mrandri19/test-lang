@@ -10,7 +10,7 @@ type lexeme =
   | LParen
 [@@deriving show]
 
-let lexer (text:string) : lexeme list =
+let lex (text:string) : lexeme list =
   let rec lex (lexemes: lexeme list) (input: string): lexeme list =
     if String.length input = 0 then
       lexemes
