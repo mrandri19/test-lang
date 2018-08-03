@@ -1,5 +1,20 @@
 (library
     (name lex)
     (libraries core stdio str)
+    (modules Lex)
     (preprocess (pps ppx_deriving.std))
  )
+
+(library
+    (name parse)
+    (libraries core lex)
+    (modules Parse)
+    (preprocess (pps ppx_deriving.std))
+)
+
+(library
+    (name eval)
+    (libraries lex parse)
+    (modules Eval)
+    (preprocess (pps ppx_deriving.std))
+)
