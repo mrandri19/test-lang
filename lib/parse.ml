@@ -8,40 +8,21 @@ type op =
   | Division
 [@@deriving show]
 
+type label = string
+[@@deriving show]
+
 type ast =
+  | Variable of label
   | Digit of int
   | Expr of ast * op * ast
   | Parenthesised of ast
+  | LetExpr of label * ast * ast
 [@@deriving show]
 
 (*
-  This is the original grammar
-  expr ::=
-        expr op expr
-      | number
-      |'(' expr ')'
-
-  We are using a recursive descent approach to parsing so the left
-  recursion must be factored out thus making the final grammar like
-  this:
-  expr ::=
-        number (op expr)*
-      |'(' expr ')'
-
-  Wrong: this grammar doesnt support things like:
-  (1)-1
-
-
-  The new one needs to be like this:
-  expr ::= term (op expr)*
-  term ::= (number | '(' expr ')' )
-
-  TODO: implement precedences
-  The new grammar with precedences:
-
   expr ::= factor (sum_sub factor)*
   factor ::= term (mul_div term)*
-  term ::= (number | '(' expr ')' )
+  term ::= digit | '(' expr ')' | variable | 'let' label '=' expr 'in' expr | variable
  *)
 let parse (input: lexeme list): ast =
   let op_of_lexeme l = match l with
@@ -106,6 +87,23 @@ let parse (input: lexeme list): ast =
         let ex = expr () in
         consume RParen;
         Parenthesised ex
+      )
+    | Some Let ->(
+        consume Let;
+        match peek () with
+        | Some Id(label) ->(
+            consume (Id label);
+            consume Equals;
+            let e1 = expr () in
+            consume In;
+            let e2 = expr () in
+            LetExpr (label, e1, e2)
+          )
+        | _ -> failwith "expeceted Identifier"
+      )
+    | Some Id(label) -> (
+        consume (Id label);
+        Variable label
       )
     | Some other -> failwith @@ "expected Number or LParen, got " ^ (show_lexeme other)
     | None -> failwith "stream finished"

@@ -2,6 +2,10 @@ open Core
 
 type lexeme =
   | Number of int
+  | Id of string
+  | Let
+  | In
+  | Equals
   | Plus
   | Minus
   | Star
@@ -26,13 +30,26 @@ let lex (text:string) : lexeme list =
           | '/' -> Slash,1
           | '(' -> LParen,1
           | ')' -> RParen,1
+          | '=' -> Equals,1
           | _ ->
             let r = Str.regexp "[0-9]+" in
             let match_pos = try Str.search_forward r input 0 with
                 _ -> 999
             in
             if match_pos <> 0 then
-              failwith "Couldnt lex"
+              let r = Str.regexp "[a-z]+" in
+              let match_pos = try Str.search_forward r input 0 with
+                  _ -> 999
+              in
+              if match_pos <> 0 then
+                failwith "Counldn't lex"
+              else
+                let s = Str.matched_string input in
+                match s with
+                | "let" -> Let, 3
+                | "in" -> In, 2
+                | _ ->
+                  Id s, String.length s
             else
               let s = Str.matched_string input in
               Number (s |> int_of_string), String.length s
