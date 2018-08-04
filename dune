@@ -1,5 +1,5 @@
 (executable
     (name repl)
-    (libraries core eval)
+    (libraries core eval typecheck)
     (preprocess (pps ppx_deriving.std))
 )

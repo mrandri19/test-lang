@@ -16,9 +16,9 @@ let bool_of_expr_type_exn =
   | Bool b -> b
   | _ as e -> failwith @@ "Expected bool, got " ^ show_expr_type e
 
+type scope = (string,expr_type,String.comparator_witness) Map.t
 
-
-let rec eval (ast: P.ast) (ctx: (string,expr_type,String.comparator_witness) Map.t): expr_type =
+let rec eval (ast: P.ast) (ctx: scope): expr_type =
   match ast with
   | P.Digit d -> Int d
   | P.Expr (lhs, op, rhs) -> (
@@ -54,6 +54,6 @@ let rec eval (ast: P.ast) (ctx: (string,expr_type,String.comparator_witness) Map
       eval e2 new_ctx
     )
   | P.Variable label -> Map.find_exn ctx label
-  | P.IfElseExpr (cond, true_expr, false_expr) -> (
-      if bool_of_expr_type_exn (eval cond ctx) then (eval true_expr ctx) else (eval false_expr ctx)
+  | P.IfElseExpr (cond, e1, e2) -> (
+      if bool_of_expr_type_exn (eval cond ctx) then (eval e1 ctx) else (eval e2 ctx)
     )

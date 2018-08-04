@@ -18,3 +18,10 @@
     (modules Eval)
     (preprocess (pps ppx_deriving.std))
 )
+
+(library
+    (name typecheck)
+    (libraries parse)
+    (modules Typecheck)
+    (preprocess (pps ppx_deriving.std))
+)
