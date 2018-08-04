@@ -6,7 +6,9 @@ type op =
   | Subtraction
   | Multiplication
   | Division
-[@@deriving show]
+  | GreaterThan
+  | LesserThan
+[@@ deriving show]
 
 type label = string
 [@@deriving show]
@@ -15,14 +17,22 @@ type ast =
   | Variable of label
   | Digit of int
   | Expr of ast * op * ast
-  | Parenthesised of ast
   | LetExpr of label * ast * ast
+  | Parenthesised of ast
+  | IfElseExpr of ast * ast * ast
 [@@deriving show]
 
 (*
-  expr ::= factor (sum_sub factor)*
+  expr ::= comp (> comp)?
+  comp ::= factor (sum_sub factor)*
   factor ::= term (mul_div term)*
-  term ::= digit | '(' expr ')' | variable | 'let' label '=' expr 'in' expr | variable
+  term ::=
+    digit |
+    variable |
+    '(' expr ')' |
+    'let' label '=' expr 'in' expr |
+    'if' expr 'then' expr 'else' expr
+
  *)
 let parse (input: lexeme list): ast =
   let op_of_lexeme l = match l with
@@ -30,6 +40,8 @@ let parse (input: lexeme list): ast =
     | Minus -> Subtraction
     | Star -> Multiplication
     | Slash -> Division
+    | Greater -> GreaterThan
+    | Lesser -> LesserThan
     | _ -> failwith (show_lexeme l ^ " can't be converted to op") in
 
   let tokens = ref input in
@@ -58,6 +70,16 @@ let parse (input: lexeme list): ast =
   in
 
   let rec expr (): ast =
+    let e1 = comp () in
+    match peek () with
+    | Some Greater | Some Lesser as cmp_op -> (
+        let cmp_op = Option.value_exn cmp_op in
+        consume cmp_op;
+        let e2 = comp () in
+        Expr (e1, (op_of_lexeme cmp_op), e2)
+      )
+    | _ -> e1
+  and comp (): ast =
     let fac = factor () in
     let tmp = ref fac in
 
@@ -105,7 +127,16 @@ let parse (input: lexeme list): ast =
         consume (Id label);
         Variable label
       )
-    | Some other -> failwith @@ "expected Number or LParen, got " ^ (show_lexeme other)
+    | Some If -> (
+        consume If;
+        let e1 = expr () in
+        consume Then;
+        let e2 = expr () in
+        consume Else;
+        let e3 = expr () in
+        IfElseExpr (e1, e2, e3)
+      )
+    | Some other -> failwith @@ "expected Number or LParen or Let or Id, got " ^ (show_lexeme other)
     | None -> failwith "stream finished"
 
   in expr ()

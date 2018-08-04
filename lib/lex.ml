@@ -2,16 +2,27 @@ open Core
 
 type lexeme =
   | Number of int
+
   | Id of string
+
   | Let
   | In
   | Equals
+
   | Plus
   | Minus
   | Star
   | Slash
+
   | RParen
   | LParen
+
+  | If
+  | Then
+  | Else
+
+  | Greater
+  | Lesser
 [@@deriving show]
 
 let lex (text:string) : lexeme list =
@@ -31,10 +42,17 @@ let lex (text:string) : lexeme list =
           | '(' -> LParen,1
           | ')' -> RParen,1
           | '=' -> Equals,1
+          | '>' -> Greater,1
+          | '<' -> Lesser,1
           | _ ->
             let r = Str.regexp "[0-9]+" in
             let match_pos = try Str.search_forward r input 0 with
                 _ -> 999
+              (* Str.search_forward returns an exception if the regex
+                 doesnt matches so we catch it and consider it a match in a
+                 position different that start: 0 since that's the only thing we
+                 are interested in.
+              *)
             in
             if match_pos <> 0 then
               let r = Str.regexp "[a-z]+" in
@@ -48,6 +66,9 @@ let lex (text:string) : lexeme list =
                 match s with
                 | "let" -> Let, 3
                 | "in" -> In, 2
+                | "if" -> If, 2
+                | "then" -> Then, 4
+                | "else" -> Else, 4
                 | _ ->
                   Id s, String.length s
             else
