@@ -28,14 +28,16 @@ type ast =
   expr ::= comp (> comp)?
   comp ::= factor (sum_sub factor)*
   factor ::= app (mul_div app)*
-  app ::= term term? (* Function application *)
+  app ::= term term* (* Function application *)
   term ::=
     digit |
     variable |
-    '(' base ')' |
-    'let' label '=' base 'in' base |
-    'if' base 'then' base 'else' base |
-    'fun' label ':' label '->'  | (* Function definition *)
+    '(' expr ')' |
+    'let' label '=' expr 'in' expr |
+    'if' expr 'then' expr 'else' expr |
+    'fun' arg+ '->' expr | (* Function definition *)
+
+  arg ::= label ':' label
  *)
 
 let parse (input: lexeme list): ast =
@@ -107,15 +109,23 @@ let parse (input: lexeme list): ast =
     !tmp
   and app (): ast =
     let e1 = term () in
-    let backtrack = !tokens in
-    try
-      let e2 = term () in
-      FunApp (e1, e2)
-    with
-    | _ -> (
-        tokens := backtrack;
-        e1
-      )
+
+    let tmp = ref e1 in
+
+    let continue = ref true in
+    while !continue do
+      let backtrack = !tokens in
+      try
+        let e2 = term () in
+        tmp := FunApp (!tmp, e2);
+      with
+      | _ -> (
+          (* Backtrack in case we cant match any more expressions *)
+          tokens := backtrack;
+          continue := false;
+        )
+    done;
+    !tmp
   and term (): ast =
     match peek () with
     | Some Number(n) -> consume (Number n); Digit n
@@ -153,20 +163,46 @@ let parse (input: lexeme list): ast =
       )
     | Some Fun -> (
         consume Fun;
-        match peek () with
-        | Some Id(argname) -> (
-            consume (Id argname);
-            consume (Colon);
-            match peek () with
-            | Some Id(argtype) -> (
-                consume (Id argtype);
-                consume (Arrow);
-                let e1 = expr () in
-                FunDecl (argname, argtype, e1)
-              )
-            | _ -> failwith "expected type of the argument"
-          )
-        | _ -> failwith "expected argument identifier"
+
+        let arg () =
+          match peek () with
+          | Some Id(argname) -> (
+              consume (Id argname);
+              consume (Colon);
+              match peek () with
+              | Some Id(argtype) -> (
+                  consume (Id argtype);
+                  (argname, argtype)
+                )
+              | _ -> failwith "expected type of the argument"
+            )
+          | _ -> failwith "expected argument identifier"
+        in
+        let args = ref [] in
+        let continue = ref true in
+        while !continue do
+          let backtrack = !tokens in
+          try
+            args := (arg ())::!args;
+          with
+            _ -> (
+              tokens := backtrack;
+              continue := false;
+            )
+        done;
+
+        consume (Arrow);
+        let e1 = expr () in
+        (* args right now is in reverse order:
+           `fun x:int y:int z:int -> ...`
+           args is [(z,int); (y,int), (x:int)]
+           but this is good since then folding it will make it become
+           0: e1
+           1: fun z:int -> e1
+           2: fun y:int -> fun z:int -> e1
+           3: fun x:int -> fun y:int -> fun z:int -> e1
+        *)
+        List.fold !args ~init:e1 ~f:(fun acc (argname, argtype) -> (FunDecl(argname, argtype,acc)))
       )
     | Some other -> failwith @@ "expected a term expansion, got " ^ (show_lexeme other)
     | None -> failwith "stream finished"

@@ -23,8 +23,8 @@ let rec eval (ast: P.ast) (ctx: context): expr_type =
       | (Int k1, P.Subtraction, Int k2) -> Int (k1 - k2)
       | (Int k1, P.Multiplication, Int k2) -> Int (k1 * k2)
       | (Int k1, P.Division, Int k2) -> Int (k1 / k2)
-      | (Bool k1, P.GreaterThan, Bool k2) -> Bool (k1 > k2)
-      | (Bool k1, P.LesserThan, Bool k2) -> Bool (k1 < k2)
+      | (Int k1, P.GreaterThan, Int k2) -> Bool (k1 > k2)
+      | (Int k1, P.LesserThan, Int k2) -> Bool (k1 < k2)
       |_ -> failwith "Expected int or bool in binary expression"
     )
   | P.Parenthesised e -> eval e ctx

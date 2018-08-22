@@ -8,6 +8,7 @@ This is an experimental programming language used for learning, written in OCaml
 * Closures `fun x: int -> x*x`
 * Strict, static typechecker
 * Partial evaluation:
+* Multiple argument functions
 ```
 $ dune build repl.exe && dune exec ./repl.exe
 > let a = ((fun x:int -> fun y:int -> x+y) 12) in a 122
@@ -16,7 +17,6 @@ $ dune build repl.exe && dune exec ./repl.exe
 
 ## Planned features
 ### Syntax Sugar
-* Multiple argument functions
 * Recursive functions
 
 ### Typesystem
