@@ -23,6 +23,10 @@ type lexeme =
 
   | Greater
   | Lesser
+
+  | Fun
+  | Arrow
+  | Colon
 [@@deriving show]
 
 let lex (text:string) : lexeme list =
@@ -36,7 +40,11 @@ let lex (text:string) : lexeme list =
       else
         let (new_lexeme, len) = match input.[0] with
           | '+' -> Plus,1
-          | '-' -> Minus,1
+          | '-' -> (
+              if input.[1] = '>' then
+                Arrow, 2
+              else Minus,1
+            )
           | '*' -> Star,1
           | '/' -> Slash,1
           | '(' -> LParen,1
@@ -44,7 +52,9 @@ let lex (text:string) : lexeme list =
           | '=' -> Equals,1
           | '>' -> Greater,1
           | '<' -> Lesser,1
+          | ':' -> Colon,1
           | _ ->
+            (* Parsing of number *)
             let r = Str.regexp "[0-9]+" in
             let match_pos = try Str.search_forward r input 0 with
                 _ -> 999
@@ -54,14 +64,15 @@ let lex (text:string) : lexeme list =
                  are interested in.
               *)
             in
-            if match_pos <> 0 then
+            if match_pos = 0 then
+              let s = Str.matched_string input in
+              Number (s |> int_of_string), String.length s
+            else
               let r = Str.regexp "[a-z]+" in
               let match_pos = try Str.search_forward r input 0 with
                   _ -> 999
               in
-              if match_pos <> 0 then
-                failwith "Counldn't lex"
-              else
+              if match_pos = 0 then
                 let s = Str.matched_string input in
                 match s with
                 | "let" -> Let, 3
@@ -69,11 +80,11 @@ let lex (text:string) : lexeme list =
                 | "if" -> If, 2
                 | "then" -> Then, 4
                 | "else" -> Else, 4
+                | "fun" -> Fun, 3
                 | _ ->
                   Id s, String.length s
-            else
-              let s = Str.matched_string input in
-              Number (s |> int_of_string), String.length s
+              else
+                failwith "Counldn't lex"
 
         in
         lex (new_lexeme::lexemes) (String.drop_prefix input len)

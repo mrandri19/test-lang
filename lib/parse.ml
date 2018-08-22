@@ -20,20 +20,24 @@ type ast =
   | LetExpr of label * ast * ast
   | Parenthesised of ast
   | IfElseExpr of ast * ast * ast
+  | FunDecl of label * label    * ast
+  | FunApp of ast * ast
 [@@deriving show]
 
 (*
   expr ::= comp (> comp)?
   comp ::= factor (sum_sub factor)*
-  factor ::= term (mul_div term)*
+  factor ::= app (mul_div app)*
+  app ::= term term? (* Function application *)
   term ::=
     digit |
     variable |
-    '(' expr ')' |
-    'let' label '=' expr 'in' expr |
-    'if' expr 'then' expr 'else' expr
-
+    '(' base ')' |
+    'let' label '=' base 'in' base |
+    'if' base 'then' base 'else' base |
+    'fun' label ':' label '->'  | (* Function definition *)
  *)
+
 let parse (input: lexeme list): ast =
   let op_of_lexeme l = match l with
     | Plus -> Sum
@@ -91,16 +95,27 @@ let parse (input: lexeme list): ast =
     done;
     !tmp
   and factor (): ast =
-    let ter = term () in
+    let ter = app () in
     let tmp = ref ter in
 
     while (match peek () with | Some Star | Some Slash -> true | _ -> false) do
       let op = Option.value_exn (peek () ) in
       consume op;
-      let ex = term () in
+      let ex = app () in
       tmp := Expr (!tmp, op |> op_of_lexeme, ex)
     done;
     !tmp
+  and app (): ast =
+    let e1 = term () in
+    let backtrack = !tokens in
+    try
+      let e2 = term () in
+      FunApp (e1, e2)
+    with
+    | _ -> (
+        tokens := backtrack;
+        e1
+      )
   and term (): ast =
     match peek () with
     | Some Number(n) -> consume (Number n); Digit n
@@ -136,7 +151,33 @@ let parse (input: lexeme list): ast =
         let e3 = expr () in
         IfElseExpr (e1, e2, e3)
       )
-    | Some other -> failwith @@ "expected Number or LParen or Let or Id, got " ^ (show_lexeme other)
+    | Some Fun -> (
+        consume Fun;
+        match peek () with
+        | Some Id(argname) -> (
+            consume (Id argname);
+            consume (Colon);
+            match peek () with
+            | Some Id(argtype) -> (
+                consume (Id argtype);
+                consume (Arrow);
+                let e1 = expr () in
+                FunDecl (argname, argtype, e1)
+              )
+            | _ -> failwith "expected type of the argument"
+          )
+        | _ -> failwith "expected argument identifier"
+      )
+    | Some other -> failwith @@ "expected a term expansion, got " ^ (show_lexeme other)
     | None -> failwith "stream finished"
 
-  in expr ()
+  in
+  let syntax_tree = expr () in
+  match !tokens with
+  | [] -> syntax_tree
+  | rest -> failwith @@
+    "lexemes not empty, still got: [ "
+    ^ (rest |> List.map ~f:show_lexeme |> String.concat ~sep:", " )
+    ^ " ]"
+    ^ ", currently syntax tree is: "
+    ^ show_ast syntax_tree

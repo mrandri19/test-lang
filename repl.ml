@@ -13,7 +13,7 @@ let rec loop () =
       in
       Typecheck.typecheck ast;
       ast
-      |> (fun x -> Eval.eval x (Map.empty (module String)))
+      |> (fun x -> Eval.eval x [])
       |> Eval.show_expr_type
       |> printf "%s\n";
       loop ()
