@@ -11,10 +11,12 @@ let rec loop () =
         |> Lex.lex
         |> Parse.parse
       in
-      Typecheck.typecheck ast;
+      let _expr_type = Typecheck.typecheck ast in
       ast
-      |> (fun x -> Eval.eval x [])
-      |> Eval.show_expr_type
+      (* |> (fun x -> Eval.eval x [])
+         |> Eval.show_expr_type
+         |> printf "%s :: %s\n" (Typecheck.show_expr_type expr_type); *)
+      |> Compile_to_js.compile
       |> printf "%s\n";
       loop ()
     )

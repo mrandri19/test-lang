@@ -25,3 +25,10 @@
     (modules Typecheck)
     (preprocess (pps ppx_deriving.std))
 )
+
+(library
+    (name compile_to_js)
+    (libraries parse)
+    (modules Compile_to_js)
+    (preprocess (pps ppx_deriving.std))
+)

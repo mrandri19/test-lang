@@ -20,7 +20,7 @@ type ast =
   | LetExpr of label * ast * ast
   | Parenthesised of ast
   | IfElseExpr of ast * ast * ast
-  | FunDecl of label * label    * ast
+  | FunDecl of label * label * ast
   | FunApp of ast * ast
 [@@deriving show]
 

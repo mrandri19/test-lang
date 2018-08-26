@@ -1,5 +1,5 @@
 (executable
     (name repl)
-    (libraries core eval typecheck)
+    (libraries core eval typecheck compile_to_js)
     (preprocess (pps ppx_deriving.std))
 )

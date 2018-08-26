@@ -9,6 +9,7 @@ This is an experimental programming language used for learning, written in OCaml
 * Strict, static typechecker
 * Partial evaluation:
 * Multiple argument functions
+* Print type of arbitrary expressions
 ```
 $ dune build repl.exe && dune exec ./repl.exe
 > let a = ((fun x:int -> fun y:int -> x+y) 12) in a 122
@@ -16,10 +17,15 @@ $ dune build repl.exe && dune exec ./repl.exe
 ```
 
 ## Planned features
+### Usability
+* Better syntax errors
+* Better typechecking errors
+
 ### Syntax Sugar
 * Recursive functions
 
 ### Typesystem
+* Use a typed AST to build the base for type inference
 * Unit type
 * Tuples
 * Records
@@ -33,6 +39,7 @@ $ dune build repl.exe && dune exec ./repl.exe
 * Hindley-Milner type system on System F
 
 ### Long term goals
+* Explore structural vs nominal typing
 * Linear types
 * Typeclasses
 * Algebaic effects
