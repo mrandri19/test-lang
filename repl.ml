@@ -6,18 +6,27 @@ let rec loop () =
   Out_channel.(flush stdout);
   match In_channel.(input_line stdin) with
   | Some line ->(
+      let ctx = [
+        ("true", Eval.Bool true);
+        ("false", Eval.Bool false)
+      ] in
+      let type_ctx =
+        (Map.empty (module String))
+        |> Map.add_exn ~key: "true" ~data:Typecheck.Bool
+        |> Map.add_exn ~key: "false" ~data:Typecheck.Bool
+      in
+
       let ast =
         line
         |> Lex.lex
         |> Parse.parse
       in
-      let expr_type = Typecheck.typecheck ast in
+      let expr_type = Typecheck.typeof ast type_ctx in
       ast
-      |> (fun x -> Eval.eval x [])
-         |> Eval.show_expr_type
-         |> printf "%s :: %s\n" (Typecheck.show_expr_type expr_type);
-      (* |> Compile_to_js.compile
-      |> printf "%s\n"; *)
+      |> (fun x -> Eval.eval x ctx)
+      |> Eval.show_expr_type
+      |> printf "%s :: %s\n" (Typecheck.show_expr_type expr_type);
+
       loop ()
     )
   | None ->
@@ -34,7 +43,7 @@ let () =
         |> Lex.lex
         |> Parse.parse
       in
-      Typecheck.typecheck ast |> ignore;
+      Typecheck.typeof ast (Map.empty (module String)) |> ignore;
       ast
       |> Compile_to_js.compile
       |> printf "%s\n";
@@ -46,7 +55,7 @@ let () =
         |> Lex.lex
         |> Parse.parse
       in
-      let expr_type = Typecheck.typecheck ast in
+      let expr_type = Typecheck.typeof ast (Map.empty (module String)) in
       ast
       |> (fun x -> Eval.eval x [])
       |> Eval.show_expr_type

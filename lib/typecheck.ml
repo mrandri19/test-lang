@@ -13,8 +13,7 @@ let type_of_string s =
   | "bool" -> Bool
   | _ -> failwith "unknown type"
 
-let typecheck (ast: Parse.ast): expr_type =
-  let rec typeof ast ctx: expr_type =
+let rec typeof ast ctx: expr_type =
     match ast with
     | P.Unit -> Unit
     | P.Digit _ -> Int
@@ -70,6 +69,4 @@ let typecheck (ast: Parse.ast): expr_type =
           )
         | _ -> failwith "cannot apply to a non function"
       )
-  in
-  typeof ast (Map.empty (module String))
 (* TODO: add better reporting instead of relying on exceptions *)
