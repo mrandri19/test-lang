@@ -39,6 +39,19 @@ let () =
       |> Compile_to_js.compile
       |> printf "%s\n";
     )), "Compiles the input to Javascript");
+    ("-e", Arg.Unit (fun () -> (
+      let program = In_channel.(input_all stdin) in
+      let ast =
+        program
+        |> Lex.lex
+        |> Parse.parse
+      in
+      let expr_type = Typecheck.typecheck ast in
+      ast
+      |> (fun x -> Eval.eval x [])
+      |> Eval.show_expr_type
+      |> printf "%s :: %s\n" (Typecheck.show_expr_type expr_type);
+    )), "Evals the input")
     ] in
   let usage_msg = "The test-lang interpreter and JS compiler." in
   let anonymous_arg_fun =
