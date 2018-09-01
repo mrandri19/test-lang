@@ -10,6 +10,7 @@ This is an experimental programming language used for learning, written in OCaml
 * Partial evaluation:
 * Multiple argument functions
 * Print type of arbitrary expressions
+* Unit type
 ```
 $ dune build repl.exe && dune exec ./repl.exe
 > let a = ((fun x:int -> fun y:int -> x+y) 12) in a 122
@@ -26,7 +27,6 @@ $ dune build repl.exe && dune exec ./repl.exe
 
 ### Typesystem
 * Use a typed AST to build the base for type inference
-* Unit type
 * Tuples
 * Records
 * Sum types
