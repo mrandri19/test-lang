@@ -8,6 +8,7 @@ type name= string
 [@@deriving show]
 
 type expr_type =
+  | Unit
   | Bool of bool
   | Int of int
   | Closure of context * name * type_ * P.ast
@@ -16,6 +17,7 @@ and context = (name*expr_type) list
 
 let rec eval (ast: P.ast) (ctx: context): expr_type =
   match ast with
+  | P.Unit -> Unit
   | P.Digit d -> Int d
   | P.Expr (lhs, op, rhs) -> (
       match (eval lhs ctx, op, eval rhs ctx) with

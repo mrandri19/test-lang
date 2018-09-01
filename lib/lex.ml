@@ -27,6 +27,8 @@ type lexeme =
   | Fun
   | Arrow
   | Colon
+
+  | Unit
 [@@deriving show]
 
 let lex (text:string) : lexeme list =
@@ -47,7 +49,11 @@ let lex (text:string) : lexeme list =
             )
           | '*' -> Star,1
           | '/' -> Slash,1
-          | '(' -> LParen,1
+          | '(' -> (
+            if input.[1] = ')' then
+              Unit, 2
+            else LParen,1
+            )
           | ')' -> RParen,1
           | '=' -> Equals,1
           | '>' -> Greater,1

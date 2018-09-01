@@ -16,6 +16,7 @@ type label = string
 type ast =
   | Variable of label
   | Digit of int
+  | Unit
   | Expr of ast * op * ast
   | LetExpr of label * ast * ast
   | Parenthesised of ast
@@ -128,6 +129,7 @@ let parse (input: lexeme list): ast =
     !tmp
   and term (): ast =
     match peek () with
+    | Some Lex.Unit -> consume Lex.Unit; Unit
     | Some Number(n) -> consume (Number n); Digit n
     | Some LParen ->(
         consume LParen;

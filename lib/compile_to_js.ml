@@ -3,6 +3,7 @@ module P = Parse
 let compile ast =
   let rec compile (ast: P.ast): string =
     match ast with
+    | P.Unit -> "null"
     | P.Digit d -> string_of_int d
     | P.Variable label -> label
     | P.Expr (e1, op, e2) -> (

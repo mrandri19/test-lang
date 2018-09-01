@@ -1,6 +1,6 @@
 open Core
 
-type expr_type = Bool | Int | Function of expr_type * expr_type
+type expr_type = Bool | Unit | Int | Function of expr_type * expr_type
 [@@deriving show]
 
 type context = (string,expr_type,String.comparator_witness) Map.t
@@ -16,6 +16,7 @@ let type_of_string s =
 let typecheck (ast: Parse.ast): expr_type =
   let rec typeof ast ctx: expr_type =
     match ast with
+    | P.Unit -> Unit
     | P.Digit _ -> Int
     | P.Parenthesised e -> typeof e ctx
     | P.Variable label -> Map.find_exn ctx label
