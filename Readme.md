@@ -12,15 +12,27 @@ This is an experimental programming language used for learning, written in OCaml
 * Print type of arbitrary expressions
 * Unit type
 * Tuples
+* REPL
+
 ```
 $ dune build repl.exe && dune exec ./repl.exe
 > let a = ((fun x:int -> fun y:int -> x+y) 12) in a 122
 (Eval.Int 134)
 ```
 
+```
+> (fun x:(int->int->int) -> x 4 5) (fun x:(int) y:(int) -> x+y)
+int :: (Eval.Int 9)
+```
+
+```
+> (fun x:(int->int*int->int) -> (x 1 (1,1))+1) (fun x:(int) y:(int*int) -> 99)
+int :: (Eval.Int 100)
+```
+
 ## Planned features
 ### Usability
-* Better syntax errors
+* Better syntax errors, OMG PLEASE, especially in `*` (Kleene star) rules
 * Better typechecking errors
 
 ### Syntax Sugar
