@@ -1,6 +1,11 @@
 open Core
 
-type expr_type = Bool | Unit | Int | Function of expr_type * expr_type
+type expr_type =
+  | Bool
+  | Unit
+  | Int
+  | Function of expr_type * expr_type
+  | Tuple_ of expr_type * expr_type
 [@@deriving show]
 
 type context = (string,expr_type,String.comparator_witness) Map.t
@@ -15,8 +20,20 @@ let type_of_string s =
 
 let rec typeof ast ctx: expr_type =
     match ast with
+    | P.TupleAccess (e1, n) -> (
+      let t1 = typeof e1 ctx in
+      match t1 with
+      | Tuple_ (t2, t3) -> (
+        match n with
+        | 1 -> t2
+        | 2 -> t3
+        | _ -> failwith "only tuples are supported, not n-uples (use 1 or 2)"
+      )
+      | _ -> failwith "Cannot access something that's not a tuple"
+    )
     | P.Unit -> Unit
     | P.Digit _ -> Int
+    | P.Tuple_ (e1, e2) -> Tuple_ (typeof e1 ctx, typeof e2 ctx)
     | P.Parenthesised e -> typeof e ctx
     | P.Variable label -> Map.find_exn ctx label
     | P.Expr (e1, op, e2) -> (

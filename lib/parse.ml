@@ -23,10 +23,14 @@ type ast =
   | IfElseExpr of ast * ast * ast
   | FunDecl of label * label * ast
   | FunApp of ast * ast
+  | Tuple_ of ast * ast
+  | TupleAccess of ast * int
 [@@deriving show]
 
 (*
-  expr ::= comp (> comp)?
+  expr ::= dot (. digit)?
+  dot = tup (, tup)?
+  tup ::= comp (> comp)?
   comp ::= factor (sum_sub factor)*
   factor ::= app (mul_div app)*
   app ::= term term* (* Function application *)
@@ -77,14 +81,34 @@ let parse (input: lexeme list): ast =
   in
 
   let rec expr (): ast =
-    let e1 = comp () in
+    let e1 = dot () in
     match peek () with
     | Some Greater | Some Lesser as cmp_op -> (
         let cmp_op = Option.value_exn cmp_op in
         consume cmp_op;
-        let e2 = comp () in
+        let e2 = dot () in
         Expr (e1, (op_of_lexeme cmp_op), e2)
       )
+    | _ -> e1
+  and dot (): ast =
+    let e1 = tup () in
+    match peek () with
+    | Some Dot ->(
+      consume Dot;
+      match peek () with
+      | Some (Number n) ->
+        consume (Number n);
+        TupleAccess(e1, n)
+      | _ -> failwith "Expected digit after dot"
+    )
+    | _ -> e1
+  and tup (): ast =
+    let e1 = comp () in
+    match peek () with
+    | Some Comma ->
+      consume Comma;
+      let e2 = comp () in
+      Tuple_(e1, e2)
     | _ -> e1
   and comp (): ast =
     let fac = factor () in

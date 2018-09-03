@@ -5,6 +5,8 @@ let compile ast =
     match ast with
     | P.Unit -> "null"
     | P.Digit d -> string_of_int d
+    | P.Tuple_ (e1, e2) -> "[" ^ compile e1 ^ "," ^ compile e2 ^ "]"
+    | P.TupleAccess (e1, n) -> "(" ^ compile e1 ^ ")" ^ "["^ string_of_int n ^"]"
     | P.Variable label -> label
     | P.Expr (e1, op, e2) -> (
         let string_of_op = function

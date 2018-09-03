@@ -12,6 +12,7 @@ type expr_type =
   | Bool of bool
   | Int of int
   | Closure of context * name * type_ * P.ast
+  | Tuple_ of expr_type * expr_type
 [@@deriving show]
 and context = (name*expr_type) list
 
@@ -19,6 +20,17 @@ let rec eval (ast: P.ast) (ctx: context): expr_type =
   match ast with
   | P.Unit -> Unit
   | P.Digit d -> Int d
+  | P.Tuple_ (e1, e2) -> Tuple_ (eval e1 ctx, eval e2 ctx)
+  | P.TupleAccess (e1, n) -> (
+    match (eval e1 ctx) with
+    | Tuple_(e1,e2) -> (
+      match n with
+      | 1 -> e1
+      | 2 -> e2
+      | _ -> failwith "Only tuples are supported, not n-uples (use 1 or 2)"
+    )
+    | _ -> failwith "Expected tuple in tuple access"
+  )
   | P.Expr (lhs, op, rhs) -> (
       match (eval lhs ctx, op, eval rhs ctx) with
       | (Int k1, P.Sum, Int k2) -> Int (k1 + k2)

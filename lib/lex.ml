@@ -29,6 +29,9 @@ type lexeme =
   | Colon
 
   | Unit
+
+  | Comma
+  | Dot
 [@@deriving show]
 
 let lex (text:string) : lexeme list =
@@ -59,6 +62,8 @@ let lex (text:string) : lexeme list =
           | '>' -> Greater,1
           | '<' -> Lesser,1
           | ':' -> Colon,1
+          | ',' -> Comma,1
+          | '.' -> Dot,1
           | _ ->
             (* Parsing of number *)
             let r = Str.regexp "[0-9]+" in
@@ -90,7 +95,7 @@ let lex (text:string) : lexeme list =
                 | _ ->
                   Id s, String.length s
               else
-                failwith "Counldn't lex"
+                failwith @@ "Counldn't lex: '" ^ Char.to_string input.[0] ^ "'"
 
         in
         lex (new_lexeme::lexemes) (String.drop_prefix input len)
