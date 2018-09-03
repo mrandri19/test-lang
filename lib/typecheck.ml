@@ -6,16 +6,25 @@ type expr_type =
   | Int
   | Function of expr_type * expr_type
   | Tuple_ of expr_type * expr_type
-[@@deriving show]
+
+let rec show_expr_type = function
+  | Bool -> "bool"
+  | Unit -> "()"
+  | Int -> "int"
+  | Function (t1, t2) -> show_expr_type t1 ^ " -> " ^ show_expr_type t2
+  | Tuple_ (t1, t2) -> "(" ^ show_expr_type t1 ^ ", " ^ show_expr_type t2 ^ ")"
 
 type context = (string,expr_type,String.comparator_witness) Map.t
 
 module P = Parse
 
-let type_of_string s =
+let rec type_of_string s =
   match s with
-  | "int" -> Int
-  | "bool" -> Bool
+  | P.Literal "int" -> Int
+  | P.Literal "bool" -> Bool
+  | P.Unit -> Unit
+  | P.Arrow (ty1, ty2) -> Function (type_of_string ty1, type_of_string ty2)
+  | P.Tuple_ (ty1, ty2) -> Tuple_ (type_of_string ty1, type_of_string ty2)
   | _ -> failwith "unknown type"
 
 let rec typeof ast ctx: expr_type =

@@ -1,21 +1,20 @@
 open Core
 open Printf
 
+let ctx = [
+  ("true", Eval.Bool true);
+  ("false", Eval.Bool false)
+]
+let type_ctx =
+  (Map.empty (module String))
+  |> Map.add_exn ~key: "true" ~data:Typecheck.Bool
+  |> Map.add_exn ~key: "false" ~data:Typecheck.Bool
+
 let rec loop () =
   printf "> ";
   Out_channel.(flush stdout);
   match In_channel.(input_line stdin) with
   | Some line ->(
-      let ctx = [
-        ("true", Eval.Bool true);
-        ("false", Eval.Bool false)
-      ] in
-      let type_ctx =
-        (Map.empty (module String))
-        |> Map.add_exn ~key: "true" ~data:Typecheck.Bool
-        |> Map.add_exn ~key: "false" ~data:Typecheck.Bool
-      in
-
       let ast =
         line
         |> Lex.lex
@@ -55,9 +54,9 @@ let () =
         |> Lex.lex
         |> Parse.parse
       in
-      let expr_type = Typecheck.typeof ast (Map.empty (module String)) in
+      let expr_type = Typecheck.typeof ast type_ctx in
       ast
-      |> (fun x -> Eval.eval x [])
+      |> (fun x -> Eval.eval x ctx)
       |> Eval.show_expr_type
       |> printf "%s :: %s\n" (Typecheck.show_expr_type expr_type);
     )), "Evals the input")

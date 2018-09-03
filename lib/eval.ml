@@ -2,7 +2,6 @@ open Core
 
 module P = Parse
 
-type type_ = string
 [@@deriving show]
 type name= string
 [@@deriving show]
@@ -11,7 +10,7 @@ type expr_type =
   | Unit
   | Bool of bool
   | Int of int
-  | Closure of context * name * type_ * P.ast
+  | Closure of context * name * P.type_ * P.ast
   | Tuple_ of expr_type * expr_type
 [@@deriving show]
 and context = (name*expr_type) list

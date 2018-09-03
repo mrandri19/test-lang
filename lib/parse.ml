@@ -13,6 +13,13 @@ type op =
 type label = string
 [@@deriving show]
 
+type type_ =
+  | Literal of string
+  | Unit
+  | Arrow of type_ * type_
+  | Tuple_ of type_ * type_
+[@@deriving show]
+
 type ast =
   | Variable of label
   | Digit of int
@@ -21,7 +28,7 @@ type ast =
   | LetExpr of label * ast * ast
   | Parenthesised of ast
   | IfElseExpr of ast * ast * ast
-  | FunDecl of label * label * ast
+  | FunDecl of label * type_ * ast
   | FunApp of ast * ast
   | Tuple_ of ast * ast
   | TupleAccess of ast * int
@@ -33,16 +40,20 @@ type ast =
   tup ::= comp (> comp)?
   comp ::= factor (sum_sub factor)*
   factor ::= app (mul_div app)*
-  app ::= term term* (* Function application *)
+  app ::= term term*
   term ::=
     digit |
     variable |
     '(' expr ')' |
     'let' label '=' expr 'in' expr |
     'if' expr 'then' expr 'else' expr |
-    'fun' arg+ '->' expr | (* Function definition *)
+    'fun' arg+ '->' expr |
 
-  arg ::= label ':' label
+  type ::=
+    prod ('->' prod)* |
+  prod ::= label ('*' label)?
+
+  arg ::=  label ':' type
  *)
 
 let parse (input: lexeme list): ast =
@@ -57,22 +68,26 @@ let parse (input: lexeme list): ast =
 
   let tokens = ref input in
 
+  let _debug_tokens () =
+    print_endline (!tokens |> List.map ~f:Lex.show_lexeme |> String.concat ~sep:", ")
+  in
+
   let peek () =
     List.hd !tokens
   in
 
-  let consume tok: unit =
+  let consume ?(exn_constructor = (fun t -> Failure t)) (tok: lexeme) : unit =
     match List.hd !tokens with
     | Some t ->
       if t = tok then
         tokens := List.tl_exn !tokens
       else
-        failwith @@
-        "Couldn't consume"
-        ^ show_lexeme tok
-        ^ " got "
-        ^ show_lexeme (List.hd_exn !tokens)
-        ^ " instead"
+        raise @@ exn_constructor @@
+          "Couldn't consume"
+          ^ show_lexeme tok
+          ^ " got "
+          ^ show_lexeme (List.hd_exn !tokens)
+          ^ " instead"
     | None ->
       failwith @@
       "Couldn't consume"
@@ -190,31 +205,86 @@ let parse (input: lexeme list): ast =
     | Some Fun -> (
         consume Fun;
 
+        let module Local = struct
+          exception NoColon
+          (* exception NoTypeId *)
+          (* exception NoArg *)
+        end in
+        let open Local in
+
+        let rec type__ (): type_ =
+          let tmp = prod () in
+
+          (*
+            TODO: use this pattern to implement the kleene star in other places
+            too, it's nice and doesn't use any whiles and refs
+           *)
+          match peek () with
+          | Some Arrow -> (
+            consume Arrow;
+            let ty = type__ () in
+            Arrow (tmp, ty)
+          )
+          | _ -> tmp
+
+        and prod (): type_ =
+          let tmp = lit_or_unit () in
+          match peek () with
+          | Some Star ->
+            consume Star;
+            let t2 = lit_or_unit () in
+            Tuple_ (tmp, t2)
+          | _ -> tmp
+
+        and lit_or_unit (): type_ =
+          match peek () with
+          | Some Id(_)
+          | Some Unit as typ -> (
+            let typ = Option.value_exn typ in
+            consume typ;
+
+            match typ with
+            | Id(typename) ->Literal typename
+            | Unit -> Unit
+            | _ -> failwith "wtf"
+          )
+          | _ -> failwith "type must start with identifier"
+        in
+
         let arg () =
           match peek () with
           | Some Id(argname) -> (
               consume (Id argname);
-              consume (Colon);
-              match peek () with
-              | Some Id(argtype) -> (
-                  consume (Id argtype);
-                  (argname, argtype)
-                )
-              | _ -> failwith "expected type of the argument"
+
+              consume ~exn_constructor:(fun _ -> raise NoColon) (Colon);
+
+              consume LParen;
+              let ty = type__ () in
+              consume RParen;
+
+              (argname, ty)
             )
           | _ -> failwith "expected argument identifier"
         in
-        let args = ref [] in
+
+        let args = ref [arg ()] in
         let continue = ref true in
         while !continue do
           let backtrack = !tokens in
           try
             args := (arg ())::!args;
           with
-            _ -> (
+            (* TODO: finish to implement decent parse errors *)
+            | Failure _error -> (
               tokens := backtrack;
               continue := false;
             )
+            | NoColon -> (
+              failwith @@ "Expected the start of type declaration ':' for example, got: '" ^ show_lexeme (List.hd_exn !tokens) ^ "' instead"
+            )
+            (* | NoTypeId -> (
+              failwith @@ "Expected a type 'int' for example, got: '" ^ show_lexeme (List.hd_exn !tokens) ^ "' instead"
+            ) *)
         done;
 
         consume (Arrow);
