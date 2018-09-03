@@ -30,6 +30,16 @@ int :: (Eval.Int 9)
 int :: (Eval.Int 100)
 ```
 
+```
+> (fun x:(int->int->int) -> x 4 5) (fun x:(int) y:(int) -> x+y)
+int :: (Eval.Int 9)
+```
+
+```
+> (fun x:(int->int*int->int) -> (x 1 (1,1))+1) (fun x:(int) y:(int*int) -> 99)
+int :: (Eval.Int 100)
+```
+
 ## Planned features
 ### Usability
 * Better syntax errors, OMG PLEASE, especially in `*` (Kleene star) rules
