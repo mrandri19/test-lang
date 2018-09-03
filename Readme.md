@@ -1,4 +1,6 @@
 # My programming language
+![TEST-LANG, badly handwritten ](https://i.imgur.com/TZxTB84.jpg)
+
 This is an experimental programming language used for learning, written in OCaml `4.06.1`.
 
 ## Current features
