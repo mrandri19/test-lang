@@ -18,13 +18,13 @@ type context = (string,expr_type,String.comparator_witness) Map.t
 
 module P = Parse
 
-let rec type_of_string s =
+let rec type_of_ast s =
   match s with
   | P.Literal "int" -> Int
   | P.Literal "bool" -> Bool
   | P.Unit -> Unit
-  | P.Arrow (ty1, ty2) -> Function (type_of_string ty1, type_of_string ty2)
-  | P.Tuple_ (ty1, ty2) -> Tuple_ (type_of_string ty1, type_of_string ty2)
+  | P.Arrow (ty1, ty2) -> Function (type_of_ast ty1, type_of_ast ty2)
+  | P.Tuple_ (ty1, ty2) -> Tuple_ (type_of_ast ty1, type_of_ast ty2)
   | _ -> failwith "unknown type"
 
 let rec typeof ast ctx: expr_type =
@@ -79,7 +79,7 @@ let rec typeof ast ctx: expr_type =
           failwith "If-then-else arms have different types"
       )
     | P.FunDecl (argname, argtype_s, e1) -> (
-        let argtype = type_of_string argtype_s in
+        let argtype = type_of_ast argtype_s in
         let new_ctx = Map.set ctx ~key:argname ~data:argtype in
         Function (argtype, typeof e1 new_ctx)
       )

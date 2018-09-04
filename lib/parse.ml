@@ -35,11 +35,11 @@ type ast =
 [@@deriving show]
 
 (*
-  expr ::= dot (. digit)?
-  dot = tup (, tup)?
+  expr = tup (, tup)?
   tup ::= comp (> comp)?
   comp ::= factor (sum_sub factor)*
-  factor ::= app (mul_div app)*
+  factor ::= dot (mul_div dot)*
+  dot :: = app (. digit)?
   app ::= term term*
   term ::=
     digit |
@@ -96,34 +96,22 @@ let parse (input: lexeme list): ast =
   in
 
   let rec expr (): ast =
-    let e1 = dot () in
-    match peek () with
-    | Some Greater | Some Lesser as cmp_op -> (
-        let cmp_op = Option.value_exn cmp_op in
-        consume cmp_op;
-        let e2 = dot () in
-        Expr (e1, (op_of_lexeme cmp_op), e2)
-      )
-    | _ -> e1
-  and dot (): ast =
     let e1 = tup () in
     match peek () with
-    | Some Dot ->(
-      consume Dot;
-      match peek () with
-      | Some (Number n) ->
-        consume (Number n);
-        TupleAccess(e1, n)
-      | _ -> failwith "Expected digit after dot"
-    )
+    | Some Comma ->
+      consume Comma;
+      let e2 = tup () in
+      Tuple_(e1, e2)
     | _ -> e1
   and tup (): ast =
     let e1 = comp () in
     match peek () with
-    | Some Comma ->
-      consume Comma;
-      let e2 = comp () in
-      Tuple_(e1, e2)
+    | Some Greater | Some Lesser as cmp_op -> (
+        let cmp_op = Option.value_exn cmp_op in
+        consume cmp_op;
+        let e2 = comp () in
+        Expr (e1, (op_of_lexeme cmp_op), e2)
+      )
     | _ -> e1
   and comp (): ast =
     let fac = factor () in
@@ -137,16 +125,28 @@ let parse (input: lexeme list): ast =
     done;
     !tmp
   and factor (): ast =
-    let ter = app () in
+    let ter = dot () in
     let tmp = ref ter in
 
     while (match peek () with | Some Star | Some Slash -> true | _ -> false) do
       let op = Option.value_exn (peek () ) in
       consume op;
-      let ex = app () in
+      let ex = dot () in
       tmp := Expr (!tmp, op |> op_of_lexeme, ex)
     done;
     !tmp
+  and dot (): ast =
+    let e1 = app () in
+    match peek () with
+    | Some Dot ->(
+      consume Dot;
+      match peek () with
+      | Some (Number n) ->
+        consume (Number n);
+        TupleAccess(e1, n)
+      | _ -> failwith "Expected digit after dot"
+    )
+    | _ -> e1
   and app (): ast =
     let e1 = term () in
 
@@ -187,7 +187,7 @@ let parse (input: lexeme list): ast =
             let e2 = expr () in
             LetExpr (label, e1, e2)
           )
-        | _ -> failwith "expeceted Identifier"
+        | _ -> failwith "expected Identifier"
       )
     | Some Id(label) -> (
         consume (Id label);

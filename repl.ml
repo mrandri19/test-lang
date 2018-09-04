@@ -33,8 +33,10 @@ let rec loop () =
     ()
 
 let () =
+  let print_ast = ref false in
   let speclist = [
     ("-r", Arg.Unit loop, "Opens the repl");
+    ("-print-ast", Arg.Set print_ast, "Prints the AST on every command");
     ("-c", Arg.Unit (fun () -> (
       let program = In_channel.(input_all stdin) in
       let ast =
@@ -54,6 +56,10 @@ let () =
         |> Lex.lex
         |> Parse.parse
       in
+
+      if !print_ast then
+        print_endline @@ Parse.show_ast ast;
+
       let expr_type = Typecheck.typeof ast type_ctx in
       ast
       |> (fun x -> Eval.eval x ctx)
